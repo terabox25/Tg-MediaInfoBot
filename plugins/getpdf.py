@@ -1,6 +1,7 @@
 from pyrogram import Client, filters
 from pyrogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 from database import pdfs
+from bson import ObjectId
 
 @Client.on_message(filters.command("pdf"))
 async def get_pdf(client, message):
@@ -38,10 +39,52 @@ async def pdf_flow(client, cb):
 
     elif data.startswith("t_"):
         _, exam, sub, topic = data.split("_")
-        files = pdfs.find({"exam": exam, "subject": sub, "topic": topic})
-        async for f in files:
-            await client.send_document(
-                cb.from_user.id,
-                f["file_id"],
-                caption=f["file_name"]
-            )
+
+        files = await pdfs.find(
+            {"exam": exam, "subject": sub, "topic": topic}
+        ).to_list(None)
+
+        if not files:
+            await cb.message.edit("❌ No PDFs available")
+            return
+
+        text = "📚 *Available PDFs*\n\n"
+        buttons = []
+
+        for i, f in enumerate(files, start=1):
+            text += f"{i}. {f['file_name']}\n"
+            buttons.append([
+                InlineKeyboardButton(
+                    f"📄 {f['file_name']}",
+                    callback_data=f"open_{str(f['_id'])}"
+                )
+        ])
+
+    await cb.message.edit(
+        text,
+        reply_markup=InlineKeyboardMarkup(buttons)
+    )
+
+
+
+@Client.on_callback_query(filters.regex("^open_"))
+async def open_pdf(client, cb):
+    pdf_id = cb.data.split("_")[1]
+    data = await pdfs.find_one({"_id": ObjectId(pdf_id)})
+
+    if not data:
+        await cb.answer("File not found", show_alert=True)
+        return
+
+    # 1️⃣ Send first page image
+    await client.send_photo(
+        cb.from_user.id,
+        data["cover_id"],
+        caption=f"📘 {data['file_name']}"
+    )
+
+    # 2️⃣ Send PDF
+    await client.send_document(
+        cb.from_user.id,
+        data["file_id"]
+    )
