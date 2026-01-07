@@ -16,14 +16,14 @@ async def addpdf(client, message):
         ])
     )
 
-@Client.on_callback_query()
+@Client.on_callback_query(filters.regex("^(exam_|sub_|top_)"))
 async def callback_handler(client, cb):
     uid = cb.from_user.id
     if uid not in user_step:
         return
 
+    step = user_step[uid]["step"]
     data = cb.data
-    step = user_step[uid].get("step")
 
     if step == "exam" and data.startswith("exam_"):
         user_step[uid]["exam"] = data.split("_")[1]
@@ -51,6 +51,7 @@ async def callback_handler(client, cb):
         user_step[uid]["topic"] = data.split("_")[1]
         user_step[uid]["step"] = "pdf"
         await cb.message.edit("📄 Now send PDF file")
+
 
 @Client.on_message(filters.document & filters.user(ADMINS))
 async def save_pdf(client, message):
