@@ -2,13 +2,13 @@ import os
 
 API_ID = int(os.getenv("API_ID", 0))
 API_HASH = os.getenv("API_HASH", "")
-TOKEN = os.getenv("TOKEN", "")
+BOT_TOKEN = os.getenv("BOT_TOKEN", "")
 
-MONGO_URI = os.getenv("MONGO_URI", "mongodb://localhost:27017")
+MONGO_URL = os.getenv("MONGO_URL", "mongodb://localhost:27017")
 DB_NAME = os.getenv("DB_NAME", "pdf_bot")
 
 STORAGE_CHANNEL_ID = int(os.getenv("STORAGE_CHANNEL_ID", 0))
 
 # ADMINS comma separated IDs → list[int]
-ADMIN_ID = list(
-    map(int, os.getenv("ADMIN_ID", "").split(","))) if os.getenv("ADMINS") else []
+ADMINS = list(
+    map(int, os.getenv("ADMINS", "").split(","))) if os.getenv("ADMINS") else []
