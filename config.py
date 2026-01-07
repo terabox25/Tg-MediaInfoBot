@@ -1,11 +1,14 @@
-API_ID = 123456
-API_HASH = "your_api_hash"
-BOT_TOKEN = "your_bot_token"
+import os
 
-MONGO_URL = "mongodb://localhost:27017"
-DB_NAME = "pdf_bot"
+API_ID = int(os.getenv("API_ID", 0))
+API_HASH = os.getenv("API_HASH", "")
+TOKEN = os.getenv("TOKEN", "")
 
-# Private storage channel ID (must be private)
-STORAGE_CHANNEL_ID = -1001234567890
+MONGO_URI = os.getenv("MONGO_URI", "mongodb://localhost:27017")
+DB_NAME = os.getenv("DB_NAME", "pdf_bot")
 
-ADMINS = [123456789]  # Telegram user IDs
+STORAGE_CHANNEL_ID = int(os.getenv("STORAGE_CHANNEL_ID", 0))
+
+# ADMINS comma separated IDs → list[int]
+ADMIN_ID = list(
+    map(int, os.getenv("ADMIN_ID", "").split(","))) if os.getenv("ADMINS") else []
