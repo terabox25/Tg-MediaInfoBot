@@ -12,7 +12,7 @@ async def get_pdf(client, message):
         )
     )
 
-@Client.on_callback_query()
+@Client.on_callback_query(filters.regex("^(e_|s_|t_)"))
 async def pdf_flow(client, cb):
     data = cb.data
 
