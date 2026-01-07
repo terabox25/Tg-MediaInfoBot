@@ -22,8 +22,8 @@ async def callback_handler(client, cb):
     if uid not in user_step:
         return
 
-    step = user_step[uid]["step"]
     data = cb.data
+    step = user_step[uid].get("step")
 
     if step == "exam" and data.startswith("exam_"):
         user_step[uid]["exam"] = data.split("_")[1]
@@ -55,7 +55,11 @@ async def callback_handler(client, cb):
 @Client.on_message(filters.document & filters.user(ADMINS))
 async def save_pdf(client, message):
     uid = message.from_user.id
-    if uid not in user_step or user_step[uid]["step"] != "pdf":
+
+    # 🔒 MAIN FIX (crash stopper)
+    if uid not in user_step:
+        return
+    if user_step[uid].get("step") != "pdf":
         return
 
     fwd = await message.forward(STORAGE_CHANNEL_ID)
@@ -68,5 +72,7 @@ async def save_pdf(client, message):
         "file_name": fwd.document.file_name
     })
 
-    user_step.pop(uid)
+    # 🔒 SAFE POP
+    user_step.pop(uid, None)
+
     await message.reply("✅ PDF Stored Successfully")
