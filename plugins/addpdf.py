@@ -19,17 +19,18 @@ async def addpdf(client, message):
             [InlineKeyboardButton("➕ Add New Exam", callback_data="add_exam")]
         ])
     )
-@Client.on_callback_query(
-    filters.regex("^(exam_|sub_|top_|add_)") & filters.user(ADMINS)
-)
+@Client.on_callback_query(filters.user(ADMINS))
 async def callback_handler(client, cb):
+    uid = cb.from_user.id   # ✅ FIX
+    data = cb.data
 
+    if uid not in user_step:
+        return
 
+    step = user_step[uid]["step"]
     
 
-    data = cb.data
-    step = user_step[uid]["step"]
-
+    
     # ---------- ADD NEW FLOW ----------
     if data == "add_exam":
         user_step[uid]["awaiting_input"] = "exam"
