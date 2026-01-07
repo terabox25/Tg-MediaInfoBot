@@ -1,19 +1,11 @@
-from pyrogram import filters
+from pyrogram import Client, filters
 from pyrogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 from config import ADMINS, STORAGE_CHANNEL_ID
 from database import pdfs
 
 user_step = {}
 
-@filters.user(ADMINS)
-async def admin_only(_, __):
-    return True
-
-@filters.private
-async def private_only(_, __):
-    return True
-
-@filters.user(ADMINS) & filters.command("addpdf")
+@Client.on_message(filters.command("addpdf") & filters.user(ADMINS))
 async def addpdf(client, message):
     user_step[message.from_user.id] = {"step": "exam"}
     await message.reply(
@@ -24,17 +16,16 @@ async def addpdf(client, message):
         ])
     )
 
-@filters.callback_query
-async def callbacks(client, cb):
+@Client.on_callback_query()
+async def callback_handler(client, cb):
     uid = cb.from_user.id
-    data = cb.data
-
     if uid not in user_step:
         return
 
     step = user_step[uid]["step"]
+    data = cb.data
 
-    if step == "exam":
+    if step == "exam" and data.startswith("exam_"):
         user_step[uid]["exam"] = data.split("_")[1]
         user_step[uid]["step"] = "subject"
         await cb.message.edit(
@@ -45,7 +36,7 @@ async def callbacks(client, cb):
             ])
         )
 
-    elif step == "subject":
+    elif step == "subject" and data.startswith("sub_"):
         user_step[uid]["subject"] = data.split("_")[1]
         user_step[uid]["step"] = "topic"
         await cb.message.edit(
@@ -56,12 +47,12 @@ async def callbacks(client, cb):
             ])
         )
 
-    elif step == "topic":
+    elif step == "topic" and data.startswith("top_"):
         user_step[uid]["topic"] = data.split("_")[1]
         user_step[uid]["step"] = "pdf"
         await cb.message.edit("📄 Now send PDF file")
 
-@filters.user(ADMINS) & filters.document
+@Client.on_message(filters.document & filters.user(ADMINS))
 async def save_pdf(client, message):
     uid = message.from_user.id
     if uid not in user_step or user_step[uid]["step"] != "pdf":
@@ -69,15 +60,13 @@ async def save_pdf(client, message):
 
     fwd = await message.forward(STORAGE_CHANNEL_ID)
 
-    data = {
+    await pdfs.insert_one({
         "exam": user_step[uid]["exam"],
         "subject": user_step[uid]["subject"],
         "topic": user_step[uid]["topic"],
         "file_id": fwd.document.file_id,
         "file_name": fwd.document.file_name
-    }
+    })
 
-    await pdfs.insert_one(data)
     user_step.pop(uid)
-
     await message.reply("✅ PDF Stored Successfully")
