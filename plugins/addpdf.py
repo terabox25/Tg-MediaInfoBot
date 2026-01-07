@@ -76,7 +76,7 @@ async def show_topics(cb):
 
 
 
-@Client.on_message(filters.text & ~filters.command & filters.user(ADMINS))
+@Client.on_message(filters.text & ~filters.command([]) & filters.user(ADMINS))
 async def save_text(client, message):
     uid = message.from_user.id
 
