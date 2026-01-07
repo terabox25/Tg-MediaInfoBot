@@ -25,9 +25,7 @@ async def addpdf(client, message):
 async def callback_handler(client, cb):
 
 
-    uid = cb.from_user.id
-    if uid not in user_step:
-        return
+    
 
     data = cb.data
     step = user_step[uid]["step"]
