@@ -67,6 +67,7 @@ async def pdf_flow(client, cb):
 
 
 
+
 @Client.on_callback_query(filters.regex("^open_"))
 async def open_pdf(client, cb):
     pdf_id = cb.data.split("_")[1]
@@ -76,15 +77,17 @@ async def open_pdf(client, cb):
         await cb.answer("File not found", show_alert=True)
         return
 
-    # 1️⃣ Send first page image
-    await client.send_photo(
-        cb.from_user.id,
-        data["cover_id"],
-        caption=f"📘 {data['file_name']}"
-    )
+    # ✅ 1️⃣ Image ONLY if available
+    if data.get("cover_id"):
+        await client.send_photo(
+            cb.from_user.id,
+            data["cover_id"],
+            caption=f"📘 {data['file_name']}"
+        )
 
-    # 2️⃣ Send PDF
+    # ✅ 2️⃣ PDF ALWAYS send
     await client.send_document(
         cb.from_user.id,
-        data["file_id"]
+        data["file_id"],
+        caption=f"📄 {data['file_name']}"
     )
