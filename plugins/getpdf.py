@@ -1,14 +1,18 @@
-from pyrogram import filters
+from pyrogram import Client, filters
 from pyrogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 from database import pdfs
 
-@filters.command("pdf")
+@Client.on_message(filters.command("pdf"))
 async def get_pdf(client, message):
     exams = await pdfs.distinct("exam")
-    buttons = [[InlineKeyboardButton(e, callback_data=f"e_{e}")] for e in exams]
-    await message.reply("Select Exam", reply_markup=InlineKeyboardMarkup(buttons))
+    await message.reply(
+        "Select Exam",
+        reply_markup=InlineKeyboardMarkup(
+            [[InlineKeyboardButton(e, callback_data=f"e_{e}")] for e in exams]
+        )
+    )
 
-@filters.callback_query
+@Client.on_callback_query()
 async def pdf_flow(client, cb):
     data = cb.data
 
@@ -39,5 +43,5 @@ async def pdf_flow(client, cb):
             await client.send_document(
                 cb.from_user.id,
                 f["file_id"],
-                caption=f"📘 {f['file_name']}"
+                caption=f["file_name"]
             )
