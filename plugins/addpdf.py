@@ -19,9 +19,12 @@ async def addpdf(client, message):
             [InlineKeyboardButton("➕ Add New Exam", callback_data="add_exam")]
         ])
     )
-
-@Client.on_callback_query(filters.regex("^(exam_|sub_|top_|add_)"))
+@Client.on_callback_query(
+    filters.regex("^(exam_|sub_|top_|add_)") & filters.user(ADMINS)
+)
 async def callback_handler(client, cb):
+
+
     uid = cb.from_user.id
     if uid not in user_step:
         return
