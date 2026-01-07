@@ -7,7 +7,10 @@ user_step = {}
 
 @Client.on_message(filters.command("addpdf") & filters.user(ADMINS))
 async def addpdf(client, message):
-    user_step[message.from_user.id] = {"step": "exam"}
+    user_step[message.from_user.id] = {
+        "step": "exam",
+        "last_image": None
+    }
     await message.reply(
         "📂 Select Exam",
         reply_markup=InlineKeyboardMarkup([
@@ -49,32 +52,48 @@ async def callback_handler(client, cb):
 
     elif step == "topic" and data.startswith("top_"):
         user_step[uid]["topic"] = data.split("_")[1]
-        user_step[uid]["step"] = "pdf"
-        await cb.message.edit("📄 Now send PDF file")
+        user_step[uid]["step"] = "upload"
+        await cb.message.edit(
+            "📤 Now send:\n"
+            "• Image (optional)\n"
+            "• Then PDF\n"
+            "You can repeat image → pdf multiple times"
+        )
+@Client.on_message(filters.photo & filters.user(ADMINS))
+async def save_image(client, message):
+    uid = message.from_user.id
+    if uid not in user_step:
+        return
+    if user_step[uid].get("step") != "upload":
+        return
 
+    # store last image temporarily
+    user_step[uid]["last_image"] = message.photo.file_id
 @Client.on_message(filters.document & filters.user(ADMINS))
 async def save_pdf(client, message):
     uid = message.from_user.id
-    if uid not in user_step or user_step[uid].get("step") != "pdf":
+    if uid not in user_step:
         return
-
-    # 🔴 PDF ke reply me image expected
-    if not message.reply_to_message or not message.reply_to_message.photo:
-        await message.reply("❌ Please reply PDF to its first-page image")
+    if user_step[uid].get("step") != "upload":
         return
-
-    cover_photo = message.reply_to_message.photo.file_id
 
     fwd = await message.forward(STORAGE_CHANNEL_ID)
 
-    await pdfs.insert_one({
+    data = {
         "exam": user_step[uid]["exam"],
         "subject": user_step[uid]["subject"],
         "topic": user_step[uid]["topic"],
         "file_id": fwd.document.file_id,
-        "file_name": fwd.document.file_name,
-        "cover_id": cover_photo
-    })
+        "file_name": fwd.document.file_name
+    }
 
-    user_step.pop(uid, None)
-    await message.reply("✅ PDF Stored Successfully")
+    # 🧠 attach image if available
+    if user_step[uid].get("last_image"):
+        data["cover_id"] = user_step[uid]["last_image"]
+
+    await pdfs.insert_one(data)
+
+    # 🔥 clear image after pairing
+    user_step[uid]["last_image"] = None
+
+    await message.reply("✅ PDF Stored")
