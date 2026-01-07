@@ -52,16 +52,18 @@ async def callback_handler(client, cb):
         user_step[uid]["step"] = "pdf"
         await cb.message.edit("📄 Now send PDF file")
 
-
 @Client.on_message(filters.document & filters.user(ADMINS))
 async def save_pdf(client, message):
     uid = message.from_user.id
+    if uid not in user_step or user_step[uid].get("step") != "pdf":
+        return
 
-    # 🔒 MAIN FIX (crash stopper)
-    if uid not in user_step:
+    # 🔴 PDF ke reply me image expected
+    if not message.reply_to_message or not message.reply_to_message.photo:
+        await message.reply("❌ Please reply PDF to its first-page image")
         return
-    if user_step[uid].get("step") != "pdf":
-        return
+
+    cover_photo = message.reply_to_message.photo.file_id
 
     fwd = await message.forward(STORAGE_CHANNEL_ID)
 
@@ -70,10 +72,9 @@ async def save_pdf(client, message):
         "subject": user_step[uid]["subject"],
         "topic": user_step[uid]["topic"],
         "file_id": fwd.document.file_id,
-        "file_name": fwd.document.file_name
+        "file_name": fwd.document.file_name,
+        "cover_id": cover_photo
     })
 
-    # 🔒 SAFE POP
     user_step.pop(uid, None)
-
     await message.reply("✅ PDF Stored Successfully")
