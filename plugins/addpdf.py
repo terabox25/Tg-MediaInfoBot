@@ -73,9 +73,13 @@ async def show_topics(cb):
         "📙 Select Topic",
         reply_markup=InlineKeyboardMarkup(buttons)
     )
-@Client.on_message(filters.text & filters.user(ADMINS))
+
+
+
+@Client.on_message(filters.text & ~filters.command & filters.user(ADMINS))
 async def save_text(client, message):
     uid = message.from_user.id
+
     if uid not in user_step or "step" not in user_step[uid]:
         return
 
@@ -91,7 +95,7 @@ async def save_text(client, message):
 
     user_step[uid].pop("step")
 
-    await message.reply("✅ Saved, continue…")
+    await message.reply_text("✅ Saved, continue…")
 
 
 
