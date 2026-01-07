@@ -15,70 +15,50 @@ async def addpdf(client, message):
         "📂 Select Exam",
         reply_markup=InlineKeyboardMarkup([
             [InlineKeyboardButton("SSC", callback_data="exam_SSC")],
-            [InlineKeyboardButton("UPSC", callback_data="exam_UPSC")],
-            [InlineKeyboardButton("➕ Add New Exam", callback_data="add_exam")]
+            [InlineKeyboardButton("UPSC", callback_data="exam_UPSC")]
         ])
     )
-@Client.on_callback_query(filters.user(ADMINS))
-async def callback_handler(client, cb):
-    uid = cb.from_user.id   # ✅ FIX
-    data = cb.data
 
+@Client.on_callback_query(filters.regex("^(exam_|sub_|top_)"))
+async def callback_handler(client, cb):
+    uid = cb.from_user.id
     if uid not in user_step:
         return
 
     step = user_step[uid]["step"]
-    
+    data = cb.data
 
-    
-    # ---------- ADD NEW FLOW ----------
-    if data == "add_exam":
-        user_step[uid]["awaiting_input"] = "exam"
-        await cb.message.edit("✏️ Send new Exam name")
-        return
-
-    if data == "add_subject":
-        user_step[uid]["awaiting_input"] = "subject"
-        await cb.message.edit("✏️ Send new Subject name")
-        return
-
-    if data == "add_topic":
-        user_step[uid]["awaiting_input"] = "topic"
-        await cb.message.edit("✏️ Send new Topic name")
-        return
-
-    # ---------- NORMAL FLOW ----------
     if step == "exam" and data.startswith("exam_"):
-        user_step[uid]["exam"] = data.split("_", 1)[1]
+        user_step[uid]["exam"] = data.split("_")[1]
         user_step[uid]["step"] = "subject"
         await cb.message.edit(
             "📘 Select Subject",
             reply_markup=InlineKeyboardMarkup([
                 [InlineKeyboardButton("History", callback_data="sub_History")],
-                [InlineKeyboardButton("Polity", callback_data="sub_Polity")],
-                [InlineKeyboardButton("➕ Add New Subject", callback_data="add_subject")]
+                [InlineKeyboardButton("Polity", callback_data="sub_Polity")]
             ])
         )
 
     elif step == "subject" and data.startswith("sub_"):
-        user_step[uid]["subject"] = data.split("_", 1)[1]
+        user_step[uid]["subject"] = data.split("_")[1]
         user_step[uid]["step"] = "topic"
         await cb.message.edit(
             "📗 Select Topic",
             reply_markup=InlineKeyboardMarkup([
                 [InlineKeyboardButton("Modern", callback_data="top_Modern")],
-                [InlineKeyboardButton("Ancient", callback_data="top_Ancient")],
-                [InlineKeyboardButton("➕ Add New Topic", callback_data="add_topic")]
+                [InlineKeyboardButton("Ancient", callback_data="top_Ancient")]
             ])
         )
 
     elif step == "topic" and data.startswith("top_"):
-        user_step[uid]["topic"] = data.split("_", 1)[1]
+        user_step[uid]["topic"] = data.split("_")[1]
         user_step[uid]["step"] = "upload"
         await cb.message.edit(
-            "📤 Send Image (optional) then PDF\nRepeat as needed"
+            "📤 Now send:\n"
+            "• Image (optional)\n"
+            "• Then PDF\n"
+            "You can repeat image → pdf multiple times"
         )
-
 @Client.on_message(filters.photo & filters.user(ADMINS))
 async def save_image(client, message):
     uid = message.from_user.id
@@ -117,43 +97,3 @@ async def save_pdf(client, message):
     user_step[uid]["last_image"] = None
 
     await message.reply("✅ PDF Stored")
-
-@Client.on_message(filters.text & filters.user(ADMINS))
-async def text_input_handler(client, message):
-    uid = message.from_user.id
-    if uid not in user_step:
-        return
-
-    mode = user_step[uid].get("awaiting_input")
-    if not mode:
-        return
-
-    value = message.text.strip()
-
-    # save new category & auto-select
-    user_step[uid][mode] = value
-    user_step[uid]["awaiting_input"] = None
-
-    if mode == "exam":
-        user_step[uid]["step"] = "subject"
-        await message.reply(
-            f"✅ Exam added: {value}\n\n📘 Select Subject",
-            reply_markup=InlineKeyboardMarkup([
-                [InlineKeyboardButton("➕ Add New Subject", callback_data="add_subject")]
-            ])
-        )
-
-    elif mode == "subject":
-        user_step[uid]["step"] = "topic"
-        await message.reply(
-            f"✅ Subject added: {value}\n\n📗 Select Topic",
-            reply_markup=InlineKeyboardMarkup([
-                [InlineKeyboardButton("➕ Add New Topic", callback_data="add_topic")]
-            ])
-        )
-
-    elif mode == "topic":
-        user_step[uid]["step"] = "upload"
-        await message.reply(
-            f"✅ Topic added: {value}\n\n📤 Now send Image (optional) then PDF"
-        )
