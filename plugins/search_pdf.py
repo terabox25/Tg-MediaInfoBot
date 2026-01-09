@@ -20,9 +20,13 @@ async def search_pdf(client, message):
     wait_msg = await message.reply("⏳ Searching")
 
     # 🔄 Spinner animation (3 sec)
+    last_text = ""
     for i in range(3):
         await asyncio.sleep(1)
-        await wait_msg.edit_text(f"{SPINNER[i]} Searching")
+        new_text = f"{SPINNER[i]} Searching"
+        if new_text != last_text:
+            await wait_msg.edit_text(new_text)
+            last_text = new_text
 
     # 🔎 SEARCH LOGIC
     regex = re.compile(query_text, re.IGNORECASE)
