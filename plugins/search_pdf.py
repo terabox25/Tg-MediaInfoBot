@@ -8,12 +8,12 @@ PAGE_SIZE = 10
 
 
 # ===================== TEXT SEARCH =====================
-@Client.on_message(filters.text & ~filters.command)
+@Client.on_message(filters.private & filters.text & ~filters.command([]))
 async def search_pdf(client, message):
     query_text = message.text.strip()
 
     if len(query_text) < 3:
-        return  # ignore very small text
+        return
 
     regex = re.compile(query_text, re.IGNORECASE)
 
@@ -33,6 +33,7 @@ async def search_pdf(client, message):
         return
 
     files = await pdfs.find(query).limit(PAGE_SIZE).to_list(None)
+    total_pages = (total + PAGE_SIZE - 1) // PAGE_SIZE
 
     buttons = []
     for f in files:
@@ -43,18 +44,10 @@ async def search_pdf(client, message):
             )
         ])
 
-    total_pages = (total + PAGE_SIZE - 1) // PAGE_SIZE
-
-    # Pagination
-    pagination = []
     if total_pages > 1:
-        pagination.append(
-            InlineKeyboardButton(
-                "Next ➡",
-                callback_data=f"search|{query_text}|2"
-            )
-        )
-        buttons.append(pagination)
+        buttons.append([
+            InlineKeyboardButton("Next ➡", callback_data=f"search|{query_text}|2")
+        ])
 
     await message.reply(
         f"🔍 **Search Results for:** `{query_text}`\nPage 1/{total_pages}",
@@ -100,26 +93,17 @@ async def search_pagination(client, cb):
             )
         ])
 
-    # Pagination buttons
-    pagination = []
-
+    nav = []
     if page > 1:
-        pagination.append(
-            InlineKeyboardButton(
-                "⬅ Prev",
-                callback_data=f"search|{query_text}|{page-1}"
-            )
+        nav.append(
+            InlineKeyboardButton("⬅ Prev", callback_data=f"search|{query_text}|{page-1}")
         )
-
     if page < total_pages:
-        pagination.append(
-            InlineKeyboardButton(
-                "Next ➡",
-                callback_data=f"search|{query_text}|{page+1}"
-            )
+        nav.append(
+            InlineKeyboardButton("Next ➡", callback_data=f"search|{query_text}|{page+1}")
         )
 
-    buttons.append(pagination)
+    buttons.append(nav)
 
     await cb.message.edit_text(
         f"🔍 **Search Results for:** `{query_text}`\nPage {page}/{total_pages}",
