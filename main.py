@@ -10,7 +10,7 @@ app = Client(
     plugins=dict(root="plugins")
 )
 
-START_IMAGE = "https://i.imgur.com/tJwBpHo.jpeg"  
+START_IMAGE = "https://ibb.co/bMBy9JNv"  
 # ⬆️ yaha apni image ka direct link lagao
 
 ADMIN_USERNAME = "lkd_ak"
