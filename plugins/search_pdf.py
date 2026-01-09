@@ -81,8 +81,15 @@ async def search_pagination(client, cb):
 
     # 🔄 Spinner on pagination
     for i in range(2):
-        await cb.message.edit_text(f"{SPINNER[i]} Searching")
-        await asyncio.sleep(0.6)
+        last_text = ""
+        for i in range(2):
+            new_text = f"{SPINNER[i]} Searching"
+            if new_text != last_text:
+                await cb.message.edit_text(new_text)
+                last_text = new_text
+            await asyncio.sleep(0.6)
+
+        
 
     regex = re.compile(query_text, re.IGNORECASE)
     query = {
