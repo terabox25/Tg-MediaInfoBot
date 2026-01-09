@@ -1,7 +1,8 @@
-from pyrogram import Client, filters
+from pyrogram import Client, filters, enums
 from pyrogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 from database import pdfs
 from bson import ObjectId
+ 
 
 PAGE_SIZE = 10
 
@@ -23,7 +24,8 @@ async def get_pdf(client, message):
     await message.reply(
         "📘 **Select Exam**",
         reply_markup=InlineKeyboardMarkup(buttons),
-        parse_mode="markdown"
+        parse_mode=enums.ParseMode.MARKDOWN
+
     )
 
 
@@ -45,7 +47,8 @@ async def pdf_flow(client, cb):
         await cb.message.edit_text(
             "📘 **Select Exam**",
             reply_markup=InlineKeyboardMarkup(buttons),
-            parse_mode="markdown"
+            parse_mode=enums.ParseMode.MARKDOWN
+
         )
 
     # ---------- EXAM ----------
@@ -69,7 +72,8 @@ async def pdf_flow(client, cb):
         await cb.message.edit_text(
             "📗 **Select Subject**",
             reply_markup=InlineKeyboardMarkup(buttons),
-            parse_mode="markdown"
+            parse_mode=enums.ParseMode.MARKDOWN
+
         )
 
     # ---------- SUBJECT ----------
@@ -97,7 +101,8 @@ async def pdf_flow(client, cb):
         await cb.message.edit_text(
             "📙 **Select Topic**",
             reply_markup=InlineKeyboardMarkup(buttons),
-            parse_mode="markdown"
+            parse_mode=enums.ParseMode.MARKDOWN
+
         )
 
     # ---------- TOPIC → PDFs (PAGINATION) ----------
@@ -169,7 +174,8 @@ async def pdf_flow(client, cb):
         await cb.message.edit_text(
             f"📚 **Available PDFs**\nPage {page}/{total_pages}",
             reply_markup=InlineKeyboardMarkup(buttons),
-            parse_mode="markdown"
+            parse_mode=enums.ParseMode.MARKDOWN
+
         )
 
 
