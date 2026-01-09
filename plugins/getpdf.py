@@ -1,8 +1,12 @@
+import asyncio
 from pyrogram import Client, filters, enums
 from pyrogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 from database import pdfs
 from bson import ObjectId
- 
+
+
+
+DELETE_AFTER = 600  # 10 minutes
 
 PAGE_SIZE = 10
 
@@ -180,27 +184,61 @@ async def pdf_flow(client, cb):
 
 
 # ===================== OPEN PDF =====================
+
+
 @Client.on_callback_query(filters.regex("^open\\|"))
 async def open_pdf(client, cb):
     await cb.answer()
-    pdf_id = cb.data.split("|")[1]
 
+    pdf_id = cb.data.split("|")[1]
     data = await pdfs.find_one({"_id": ObjectId(pdf_id)})
+
     if not data:
         await cb.answer("❌ File not found", show_alert=True)
         return
 
     uid = cb.from_user.id
+    sent_messages = []
 
+    # 🔰 Clean caption (old channel text ignored)
+    clean_caption = (
+        f"📄 **{data['file_name']}**\n\n"
+        "PDF Provided by @lkd_ak"
+    )
+
+    # 📘 Cover Image (optional)
     if data.get("cover_id"):
-        await client.send_photo(
+        cover = await client.send_photo(
             uid,
             data["cover_id"],
-            caption=f"📘 {data['file_name']}"
+            caption=clean_caption
         )
+        sent_messages.append(cover)
 
-    await client.send_document(
+    # 📄 Send PDF
+    doc = await client.send_document(
         uid,
         data["file_id"],
-        caption=f"📄 {data['file_name']}"
+        caption=clean_caption
     )
+    sent_messages.append(doc)
+
+    # ⚠️ Copyright Warning
+    warn = await client.send_message(
+        uid,
+        "❗️ **ɪᴍᴘᴏʀᴛᴀɴᴛ** ❗️\n\n"
+        "ᴛʜɪꜱ ᴠɪᴅᴇᴏ / ꜰɪʟᴇ ᴡɪʟʟ ʙᴇ ᴅᴇʟᴇᴛᴇᴅ ɪɴ **10 ᴍɪɴᴜᴛᴇꜱ** "
+        "(ᴅᴜᴇ ᴛᴏ ᴄᴏᴘʏʀɪɢʜᴛ ɪꜱꜱᴜᴇꜱ).\n\n"
+        "📌 ᴘʟᴇᴀꜱᴇ ꜰᴏʀᴡᴀʀᴅ ᴛʜɪꜱ ᴠɪᴅᴇᴏ / ꜰɪʟᴇ "
+        "ᴛᴏ ꜱᴏᴍᴇᴡʜᴇʀᴇ ᴇʟꜱᴇ."
+    )
+    sent_messages.append(warn)
+
+    # ⏳ Auto Delete After 10 Minutes
+    await asyncio.sleep(DELETE_AFTER)
+
+    for msg in sent_messages:
+        try:
+            await msg.delete()
+        except:
+            pass
