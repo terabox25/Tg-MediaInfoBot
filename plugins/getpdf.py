@@ -6,7 +6,7 @@ from bson import ObjectId
 
 
 
-DELETE_AFTER = 600  # 10 minutes
+DELETE_AFTER = 20  # 10 minutes
 
 PAGE_SIZE = 10
 
