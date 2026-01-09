@@ -55,3 +55,4 @@ async def start(_, m):
             ]
         )
     )
+app.run()
