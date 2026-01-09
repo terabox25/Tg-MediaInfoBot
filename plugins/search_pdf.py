@@ -2,7 +2,8 @@ from pyrogram import Client, filters, enums
 from pyrogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 from database import pdfs
 from bson import ObjectId
-import re, asyncio
+import re
+import asyncio
 
 PAGE_SIZE = 10
 SPINNER = ["⏳", "⌛", "🔄"]
@@ -19,8 +20,8 @@ async def search_pdf(client, message):
     # ⏳ Initial waiting message
     wait_msg = await message.reply("⏳ Searching")
 
-    # 🔄 Spinner animation (3 sec)
-    last_text = ""
+    # 🔄 Spinner animation (SAFE – NO ERROR)
+    last_text = "⏳ Searching"
     for i in range(3):
         await asyncio.sleep(1)
         new_text = f"{SPINNER[i]} Searching"
@@ -41,7 +42,7 @@ async def search_pdf(client, message):
 
     total = await pdfs.count_documents(query)
 
-    # ❌ NO RESULT → spinner replaced
+    # ❌ No result
     if total == 0:
         await wait_msg.edit_text("❌ No related PDFs found")
         return
@@ -63,7 +64,7 @@ async def search_pdf(client, message):
             InlineKeyboardButton("Next ➡", callback_data=f"search|{query_text}|2")
         ])
 
-    # ✅ Spinner message replaced by result
+    # ✅ Replace spinner with result
     await wait_msg.edit_text(
         f"🔎 **Search Results for:** `{query_text}`\nPage 1/{total_pages}",
         reply_markup=InlineKeyboardMarkup(buttons),
@@ -79,16 +80,14 @@ async def search_pagination(client, cb):
     _, query_text, page = cb.data.split("|")
     page = int(page)
 
-    # 🔄 Spinner on pagination
-    last_text = ""
+    # 🔄 Spinner during page change (SAFE)
+    last_text = cb.message.text
     for i in range(2):
+        await asyncio.sleep(0.6)
         new_text = f"{SPINNER[i]} Searching"
         if new_text != last_text:
             await cb.message.edit_text(new_text)
             last_text = new_text
-        await asyncio.sleep(0.6)
-
-        
 
     regex = re.compile(query_text, re.IGNORECASE)
     query = {
@@ -131,7 +130,7 @@ async def search_pagination(client, cb):
 
     buttons.append(nav)
 
-    # ✅ Spinner replaced by results
+    # ✅ Replace spinner with result
     await cb.message.edit_text(
         f"🔎 **Search Results for:** `{query_text}`\nPage {page}/{total_pages}",
         reply_markup=InlineKeyboardMarkup(buttons),
