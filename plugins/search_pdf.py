@@ -2,9 +2,10 @@ from pyrogram import Client, filters, enums
 from pyrogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 from database import pdfs
 from bson import ObjectId
-import re
+import re, asyncio
 
 PAGE_SIZE = 10
+SPINNER = ["⏳", "⌛", "🔄"]
 
 
 # ===================== TEXT SEARCH =====================
@@ -15,8 +16,16 @@ async def search_pdf(client, message):
     if len(query_text) < 3:
         return
 
-    regex = re.compile(query_text, re.IGNORECASE)
+    # ⏳ Initial waiting message
+    wait_msg = await message.reply("⏳ Searching")
 
+    # 🔄 Spinner animation (3 sec)
+    for i in range(3):
+        await asyncio.sleep(1)
+        await wait_msg.edit_text(f"{SPINNER[i]} Searching")
+
+    # 🔎 SEARCH LOGIC
+    regex = re.compile(query_text, re.IGNORECASE)
     query = {
         "$or": [
             {"file_name": regex},
@@ -28,8 +37,9 @@ async def search_pdf(client, message):
 
     total = await pdfs.count_documents(query)
 
+    # ❌ NO RESULT → spinner replaced
     if total == 0:
-        await message.reply("❌ No related PDFs found")
+        await wait_msg.edit_text("❌ No related PDFs found")
         return
 
     files = await pdfs.find(query).limit(PAGE_SIZE).to_list(None)
@@ -49,8 +59,9 @@ async def search_pdf(client, message):
             InlineKeyboardButton("Next ➡", callback_data=f"search|{query_text}|2")
         ])
 
-    await message.reply(
-        f"🔍 **Search Results for:** `{query_text}`\nPage 1/{total_pages}",
+    # ✅ Spinner message replaced by result
+    await wait_msg.edit_text(
+        f"🔎 **Search Results for:** `{query_text}`\nPage 1/{total_pages}",
         reply_markup=InlineKeyboardMarkup(buttons),
         parse_mode=enums.ParseMode.MARKDOWN
     )
@@ -63,6 +74,11 @@ async def search_pagination(client, cb):
 
     _, query_text, page = cb.data.split("|")
     page = int(page)
+
+    # 🔄 Spinner on pagination
+    for i in range(2):
+        await cb.message.edit_text(f"{SPINNER[i]} Searching")
+        await asyncio.sleep(0.6)
 
     regex = re.compile(query_text, re.IGNORECASE)
     query = {
@@ -105,8 +121,9 @@ async def search_pagination(client, cb):
 
     buttons.append(nav)
 
+    # ✅ Spinner replaced by results
     await cb.message.edit_text(
-        f"🔍 **Search Results for:** `{query_text}`\nPage {page}/{total_pages}",
+        f"🔎 **Search Results for:** `{query_text}`\nPage {page}/{total_pages}",
         reply_markup=InlineKeyboardMarkup(buttons),
         parse_mode=enums.ParseMode.MARKDOWN
     )
