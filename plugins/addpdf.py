@@ -126,10 +126,16 @@ async def save_text(client, message):
 @Client.on_message(filters.photo & filters.user(ADMINS))
 async def save_image(client, message):
     uid = message.from_user.id
-    if user_step.get(uid, {}).get("step") != "upload":
+
+    if uid not in user_step:
+        return
+
+    # accept image anytime after topic is selected
+    if "topic" not in user_step[uid]:
         return
 
     user_step[uid]["last_image"] = message.photo.file_id
+    await message.reply("🖼️ Image saved, now send PDF")
 
 
 # ───────────── PDF ─────────────
