@@ -103,9 +103,13 @@ async def add_topic(client, cb):
 
 
 # ===================== TEXT INPUT (NEW EXAM / SUBJECT / TOPIC) =====================
-@Client.on_message(filters.text & ~filters.command & filters.user(ADMINS))
+@Client.on_message(filters.text & filters.user(ADMINS))
 async def save_text(client, message):
     uid = message.from_user.id
+
+    # ignore commands like /start /addpdf
+    if message.text.startswith("/"):
+        return
 
     if uid not in user_step or "step" not in user_step[uid]:
         return
@@ -129,19 +133,6 @@ async def save_text(client, message):
             "• Send Image (optional)\n"
             "• Then send PDF"
         )
-
-
-# ===================== IMAGE (OPTIONAL) =====================
-@Client.on_message(filters.photo & filters.user(ADMINS))
-async def save_image(client, message):
-    uid = message.from_user.id
-    if uid not in user_step:
-        return
-    if user_step[uid].get("step") != "upload":
-        return
-
-    user_step[uid]["last_image"] = message.photo.file_id
-
 
 # ===================== PDF UPLOAD =====================
 @Client.on_message(filters.document & filters.user(ADMINS))
